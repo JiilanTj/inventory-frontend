@@ -1,6 +1,22 @@
 import { API_BASE_URL, AUTH_KEY, TOKEN_KEY } from '@/config/constants';
 import { LoginResponse, User } from '@/models/user';
 
+interface UsersResponse {
+  status: string;
+  results: number;
+  data: {
+    users: User[];
+  };
+}
+
+interface RegisterAdminRequest {
+  name: string;
+  email: string;
+  phone: string;
+  class: string;
+  password: string;
+}
+
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -69,4 +85,35 @@ export const isAuthenticated = (): boolean => {
 export const isAdmin = (): boolean => {
   const user = getCurrentUser();
   return user?.role === 'admin';
-}; 
+};
+
+export async function getUsers(role: 'admin' | 'user', token: string): Promise<UsersResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/users?role=${role}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch users');
+  }
+
+  return response.json();
+}
+
+export async function registerAdmin(data: RegisterAdminRequest, token: string): Promise<LoginResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/register-admin`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to register admin');
+  }
+
+  return response.json();
+} 
