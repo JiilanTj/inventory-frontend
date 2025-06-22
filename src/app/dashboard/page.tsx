@@ -14,7 +14,10 @@ export default function UserDashboard() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const response = await getItems();
+        const response = await getItems({
+          page: 1,
+          limit: 10
+        });
         setItems(response.data.items);
       } catch (error) {
         console.error('Error fetching items:', error);
@@ -23,11 +26,13 @@ export default function UserDashboard() {
       }
     };
 
-    fetchItems();
-  }, []);
+    if (user) {
+      fetchItems();
+    }
+  }, [user]);
 
   if (!user) {
-    return <div>Loading...</div>;
+    return null;
   }
 
   return (

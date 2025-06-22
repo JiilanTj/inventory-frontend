@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Item, ItemStats, PaginationMeta } from '@/models/item';
-import { getItems, getItemStats } from '@/services/items';
+import { getItems, getItemStats, exportItemsExcel } from '@/services/items';
 import ItemsTable from '@/components/admin/ItemsTable';
 import { formatCurrency } from '@/utils/format';
+import { AddItemModal } from '@/components/admin/ItemsTable';
 
 type SortableFields = keyof Pick<Item, 'name' | 'status' | 'condition' | 'location'> | 'price';
 
@@ -30,6 +31,7 @@ export default function ItemsPage() {
     total: 0
   });
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const fetchItems = async (page: number = 1) => {
     setIsLoading(true);
@@ -98,6 +100,18 @@ export default function ItemsPage() {
 
   const handlePageChange = (newPage: number) => {
     fetchItems(newPage);
+  };
+
+  const handleExport = async () => {
+    try {
+      await exportItemsExcel();
+    } catch (err) {
+      alert('Failed to export items');
+    }
+  };
+
+  const handleAddSuccess = () => {
+    fetchItems(1);
   };
 
   if (!stats) {
@@ -200,14 +214,14 @@ export default function ItemsPage() {
                 <input
                   type="text"
                   placeholder="Search items..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               {/* Status Filter */}
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -220,13 +234,13 @@ export default function ItemsPage() {
             {/* Actions */}
             <div className="flex gap-2">
               <button
-                onClick={() => {/* TODO: Export to Excel */}}
+                onClick={handleExport}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Export
               </button>
               <button
-                onClick={() => {/* TODO: Add New Item */}}
+                onClick={() => setIsAddModalOpen(true)}
                 className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 Add New Item
@@ -244,6 +258,7 @@ export default function ItemsPage() {
             isLoading={isLoading}
             sortConfig={sortConfig}
             onSort={handleSort}
+            onSuccess={handleAddSuccess}
           />
 
           {/* Pagination */}
@@ -345,6 +360,7 @@ export default function ItemsPage() {
           )}
         </div>
       </div>
+      <AddItemModal open={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSuccess={handleAddSuccess} />
     </div>
   );
 } 

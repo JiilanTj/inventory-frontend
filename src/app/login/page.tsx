@@ -21,22 +21,29 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log('Attempting login...');
       const response = await login(email, password);
+      console.log('Login response:', response);
 
       if (response.status === 'success') {
-        localStorage.setItem('auth', JSON.stringify(response));
-        document.cookie = `auth=${JSON.stringify(response)}; path=/`;
+        console.log('Login successful, setting user:', response.data.user);
         setUser(response.data.user);
         
-        if (response.data.user.role === 'admin') {
-          router.push(ROUTES.ADMIN_DASHBOARD);
-        } else {
-          router.push(ROUTES.USER_DASHBOARD);
-        }
+        // Wait a moment for the state to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const redirectPath = response.data.user.role === 'admin' 
+          ? ROUTES.ADMIN_DASHBOARD 
+          : ROUTES.USER_DASHBOARD;
+        
+        console.log('Redirecting to:', redirectPath);
+        router.replace(redirectPath);
       } else {
+        console.log('Login failed:', response);
         setError('Login failed. Please check your credentials.');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);

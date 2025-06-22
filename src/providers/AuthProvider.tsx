@@ -1,10 +1,10 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { User } from '@/models/user';
-import { getCurrentUser } from '@/services/auth';
-import { ROUTES, AUTH_KEY } from '@/config/constants';
+import { getCurrentUser, getToken } from '@/services/auth';
+import { ROUTES, AUTH_KEY, TOKEN_KEY } from '@/config/constants';
 
 interface AuthContextType {
   user: User | null;
@@ -16,36 +16,60 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const user = getCurrentUser();
-    setUser(user);
-  }, []);
+    const checkAuth = async () => {
+      console.log('Checking auth state...');
+      const currentUser = getCurrentUser();
+      const token = getToken();
+      console.log('Current auth state:', { currentUser, token, pathname });
+
+      // Set user state
+      setUser(currentUser);
+
+      const isLoginPage = pathname === ROUTES.LOGIN;
+      const isAuthenticated = currentUser && token;
+
+      // If on login page and authenticated, redirect to appropriate dashboard
+      if (isAuthenticated && isLoginPage) {
+        console.log('Already authenticated on login page, redirecting...');
+        const targetRoute = currentUser.role === 'admin' ? ROUTES.ADMIN_DASHBOARD : ROUTES.USER_DASHBOARD;
+        router.replace(targetRoute);
+        return;
+      }
+
+      // If not on login page and not authenticated, redirect to login
+      if (!isAuthenticated && !isLoginPage) {
+        console.log('Not authenticated on protected route, redirecting to login...');
+        router.replace(ROUTES.LOGIN);
+        return;
+      }
+
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [pathname, router]);
 
   const handleLogout = () => {
-    // Clear localStorage
-    localStorage.clear();
-    // Alternative: localStorage.removeItem(AUTH_KEY);
-
-    // Clear sessionStorage
-    sessionStorage.clear();
-
-    // Clear all cookies
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i];
-      const eqPos = cookie.indexOf('=');
-      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-      document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
-    }
-
-    // Reset auth context
+    console.log('Logging out...');
+    localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
-    
-    // Redirect to login
-    router.push(ROUTES.LOGIN);
+    router.replace(ROUTES.LOGIN);
   };
+
+  // Show loading state only when we're in a transition
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider

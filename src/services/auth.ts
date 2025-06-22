@@ -1,4 +1,4 @@
-import { API_BASE_URL, AUTH_KEY } from '@/config/constants';
+import { API_BASE_URL, AUTH_KEY, TOKEN_KEY } from '@/config/constants';
 import { LoginResponse, User } from '@/models/user';
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
@@ -10,12 +10,39 @@ export const login = async (email: string, password: string): Promise<LoginRespo
     body: JSON.stringify({ email, password }),
   });
 
+  if (!response.ok) {
+    throw new Error('Login failed');
+  }
+
   const data = await response.json();
+  console.log('Login API response:', data);
+  
+  if (data.status === 'success' && data.token) {
+    // Store token separately
+    localStorage.setItem(TOKEN_KEY, data.token);
+    
+    // Store user data without token
+    const authData = {
+      status: data.status,
+      data: {
+        user: data.data.user
+      }
+    };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(authData));
+    // Set cookie for middleware
+    document.cookie = `${AUTH_KEY}=${encodeURIComponent(JSON.stringify(authData))}; path=/;`;
+  } else {
+    throw new Error('Invalid response format');
+  }
+  
   return data;
 };
 
 export const logout = () => {
   localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  // Remove cookie for middleware
+  document.cookie = `${AUTH_KEY}=; Max-Age=0; path=/;`;
 };
 
 export const getCurrentUser = (): User | null => {
@@ -30,8 +57,13 @@ export const getCurrentUser = (): User | null => {
   }
 };
 
+export const getToken = (): string | null => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  return token;
+};
+
 export const isAuthenticated = (): boolean => {
-  return !!getCurrentUser();
+  return !!getCurrentUser() && !!getToken();
 };
 
 export const isAdmin = (): boolean => {

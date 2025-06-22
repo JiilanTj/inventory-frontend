@@ -44,8 +44,10 @@ export default function AdminDashboard() {
       }
     };
 
-    fetchData();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const handleSort = (key: SortableFields) => {
     setSortConfig(prevConfig => ({
@@ -74,8 +76,22 @@ export default function AdminDashboard() {
     return 0;
   });
 
-  if (!user || !stats) {
-    return <div>Loading...</div>;
+  // Don't render anything while auth is being checked
+  if (!user) {
+    return null;
+  }
+
+  // Don't render if user is not admin
+  if (user.role !== 'admin') {
+    return null;
+  }
+
+  if (!stats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (

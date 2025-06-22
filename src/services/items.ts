@@ -71,4 +71,86 @@ export async function getItemStats(): Promise<ItemStatsResponse> {
   }
 
   return response.json();
+}
+
+export async function exportItemsExcel(): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/export/items/excel`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to export items');
+  }
+
+  // Download file
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'items.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function addItem(itemData: any): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/items`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify(itemData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to add item');
+  }
+
+  return response.json();
+}
+
+export async function getItemById(id: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch item');
+  }
+  return response.json();
+}
+
+export async function updateItem(id: string, data: any): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to update item');
+  }
+  return response.json();
+}
+
+export async function deleteItem(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete item');
+  }
 } 
