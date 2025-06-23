@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:5000/api';
+export const API_BASE_URL = 'https://api.pakhjtedsmkn4pdl.com/api';
 
 export const AUTH_KEY = 'auth';
 export const TOKEN_KEY = 'token';
